@@ -5,9 +5,9 @@ function App() {
     const { currentPage, setCurrentPage } = useContext(CurrentPageContext);
 
     return (
-        <>
+        <div className='main-content'>
             {currentPage}
-        </>
+        </div>
     );
 }
 

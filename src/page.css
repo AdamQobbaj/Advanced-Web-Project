@@ -14,7 +14,7 @@ body {
   display: flex;
   justify-content: right;
   padding: 15px 20px;
-  width: 94%;
+  width: 100%;
   border-bottom: #3a3a3a solid 3px;
 }
 .admin-info {
@@ -77,10 +77,13 @@ body {
     text-align: center;
   }
 }
+
 .main-content {
   flex: 1;
   padding: 20px;
 }
+
+
 .main-content header {
   align-items: center;
   justify-content: space-between;
