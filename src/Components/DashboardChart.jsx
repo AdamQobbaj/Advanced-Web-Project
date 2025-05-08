@@ -81,9 +81,11 @@ function DashboardChart({ labels, dataValues }) {
   }, [labels, dataValues]);
 
   return (
-    <div className="chart-container" style={{ position: 'relative', height: '300px' }}>
-      <canvas ref={canvasRef} />
-    </div>
+      <div 
+          className="w-[100%] h-75 md:h-[100%] mx-auto mt-5"
+      >
+          <canvas ref={canvasRef} />
+      </div>
   );
 }
 

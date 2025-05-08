@@ -54,26 +54,59 @@ function Signin() {
   };
 
   return (
-    <div className="signup-container">
-      <h2 className="signup-title">Sign In</h2>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#181818]">
+      <div className="bg-gray-900 text-white p-8 rounded-2xl w-[100%] md:w-lg mx-auto h-800px ">
+        <h2 className="text-3xl font-bold mb-6">Sign In</h2>
 
-      <label htmlFor="signup-username" className="signup-label">Username</label>
-      <input type="text" id="signup-username" name="username" className="signup-input" required />
+        <label htmlFor="signup-username" className="block text-lg font-semibold mb-1">Username</label>
+        <input
+          type="text"
+          id="signup-username"
+          name="username"
+          className="w-full p-3 mb-4 rounded-md bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+          required
+        />
 
-      <label htmlFor="signup-password" className="signup-label">Password</label>
-      <input type="password" id="signup-password" name="password" className="signup-input" required />
+        <label htmlFor="signup-password" className="block text-lg font-semibold mb-1">Password</label>
+        <input
+          type="password"
+          id="signup-password"
+          name="password"
+          className="w-full p-3 mb-4 rounded-md bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+          required
+        />
 
-      <div className="signup-checkbox-container">
-        <input type="checkbox" id="signup-student" name="student" />
-        <label htmlFor="signup-student" className="signup-label">Stay Signed In?</label>
-      </div>
+        <div className="flex items-center mb-6">
+          <input
+            type="checkbox"
+            id="signup-student"
+            name="student"
+            className="mr-2 accent-green-500"
+          />
+          <label htmlFor="signup-student" className="text-lg font-semibold">Stay Signed In?</label>
+        </div>
 
-      <div>
-        <button className="signup-button" onClick={handleSignin}>Sign In</button>
-        <h3>New user?</h3>
-        <h3 className="already" onClick={() => setCurrentPage(<Signup />)}>Sign up</h3>
+        <button
+          className="w-full bg-green-500 text-white text-lg font-semibold py-3 rounded-lg hover:bg-green-600 transition-colors"
+          onClick={handleSignin}
+        >
+          Sign In
+        </button>
+
+        <div className="mt-6 text-center">
+          <h3 className="text-md">New user?</h3>
+          <h3
+            className="text-md text-green-400 font-semibold cursor-pointer hover:underline"
+            onClick={() => setCurrentPage(<Signup />)}
+          >
+            Sign up
+          </h3>
+        </div>
       </div>
     </div>
+    
+
+
   );
 }
 
