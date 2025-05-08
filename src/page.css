@@ -2,7 +2,7 @@ body {
   font-family: "Poppins", sans-serif;
   display: flex;
   flex-direction: column;
-  background: #111;
+  background: #666666;
   color: #ffffff;
   height: 100vh;
   width: 100%;
@@ -15,7 +15,7 @@ body {
   justify-content: right;
   padding: 15px 20px;
   width: 100%;
-  border-bottom: #3a3a3a solid 3px;
+  border-bottom: #666666 solid 3px;
 }
 .admin-info {
   display: flex;

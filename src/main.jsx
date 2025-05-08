@@ -133,7 +133,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
       <CurrentPageProvider>
           <CurrentMainContentProvider>
-              <App />
+              <App className = "bg-red-900" />
           </CurrentMainContentProvider>
       </CurrentPageProvider>
   </StrictMode>

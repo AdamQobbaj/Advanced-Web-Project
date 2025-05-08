@@ -7,7 +7,7 @@ const CurrentPageContext = createContext();
 
 const CurrentPageProvider = ({ children }) => {
     const staySignedIn = JSON.parse(localStorage.getItem("stay-signed-in"));
-    const [currentPage, setCurrentPage] = useState(<Signin/>);
+    const [currentPage, setCurrentPage] = useState(<MainPage/>);
     if(staySignedIn == "true")
         setCurrentPage(<MainPage/>);
     return (
