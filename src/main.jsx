@@ -4,6 +4,9 @@ import './index.css';
 import App from './App'; 
 import { CurrentPageProvider } from './contexts/currentPage';
 import { CurrentMainContentProvider } from './contexts/currentMainContent';
+import { ProjectDataProvider } from './contexts/projectDataContext';
+import { AddProjectProvider } from './contexts/addProjectContext';
+import { ProjectsProvider } from './contexts/projectsContext';
 
 
 
@@ -27,7 +30,8 @@ let students = [
   { id: 3, name: "Student 3", major: "Data Science", password: "0000"  },
   { id: 4, name: "Student 4", major: "Data Science", password: "0000"  },
   { id: 5, name: "Student 5", major: "Data Science", password: "0000"  },
-  { id: 6, name: "Student 6", major: "Data Science", password: "0000"  }
+  { id: 6, name: "Student 6", major: "Data Science", password: "0000"  },
+  { id: 7, name: "Student 7", major: "Data Science", password: "0000"  }
 
 ];
 
@@ -41,6 +45,12 @@ let tasks = [
   { id: 104, title: "Develop AI",name:"efkkkwc",description:"dcdcsdjjjc",students:[2], status: "In Progress",projectid:"3", dueDate:"2024-07-15"},
   { id: 105, title: "Develop AI",name:"efkkkwc",description:"dcdcsdjjjc",students:[2], status: "In Progress",projectid:"4", dueDate:"2024-07-15"},
   { id: 106, title: "Develop AI",name:"efkkkwc",description:"dcdcsdjjjc",students:[2], status: "In Progress",projectid:"4", dueDate:"2024-07-15"},
+    { id: 107, title: "Develop AI",name:"efkkkwc",description:"dcdcsdjjjc",students:[2], status: "In Progress",projectid:"4", dueDate:"2024-07-15"},
+  { id: 108, title: "Develop AI",name:"efkkkwc",description:"dcdcsdjjjc",students:[2], status: "In Progress",projectid:"4", dueDate:"2024-07-15"},
+  { id: 109, title: "Develop AI",name:"efkkkwc",description:"dcdcsdjjjc",students:[2], status: "In Progress",projectid:"4", dueDate:"2024-07-15"},
+  { id: 110, title: "Develop AI",name:"efkkkwc",description:"dcdcsdjjjc",students:[2], status: "In Progress",projectid:"4", dueDate:"2024-07-15"},
+  { id: 111, title: "Develop AI",name:"efkkkwc",description:"dcdcsdjjjc",students:[2], status: "In Progress",projectid:"4", dueDate:"2024-07-15"},
+
 ];
 
 // Save tasks to local storage
@@ -56,6 +66,7 @@ let projects = [
       description: "A project on artificial intelligence applications",
       category:"Web Development",
       status:"In Progress",
+      percentage:50,
       startDate:"2024-03-15",
       endDate:"2024-07-15",
       students: [1, 2],  
@@ -68,6 +79,7 @@ let projects = [
       description: "A project on artificial intelligence applications",
       category:"Web Development",
       status:"In Progress",
+      percentage:40,
       startDate:"2024-03-10",
       endDate:"2024-07-10",
       students: [1, 2],  
@@ -79,6 +91,7 @@ let projects = [
       description: "A project jlnlejtl  on artificial intelligence applications",
       category:"Web Development",
       status:"In Progress",
+      percentage:70,
       startDate:"2020-03-15",
       endDate:"2024-07-15",
       students: [1, 2],  
@@ -90,10 +103,12 @@ let projects = [
       description: "A proje intelligence applications",
       category:"Web Development",
       status:"Completed",
+      percentage:100,
+
       startDate:"2024-03-15",
       endDate:"2025-07-15",
       students: [3, 2],  
-      tasks: [105, 106]   
+      tasks: [105, 106,107,108,109,110,111]   
   },
   {
       id: 5,
@@ -101,11 +116,14 @@ let projects = [
       description: "A projec gence applications",
       category:"Web Development",
       status:"In Progress",
+      percentage:30,
       startDate:"2024-03-15",
       endDate:"2024-07-15",
       students: [1, 3],  
       tasks: []  
   }
+ 
+
 
 
 ];
@@ -133,7 +151,14 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
       <CurrentPageProvider>
           <CurrentMainContentProvider>
-              <App className = "bg-red-900" />
+            <ProjectsProvider>
+              <ProjectDataProvider>
+                <AddProjectProvider>
+                  <App />
+                </AddProjectProvider>
+               </ProjectDataProvider>
+            </ProjectsProvider>
+ 
           </CurrentMainContentProvider>
       </CurrentPageProvider>
   </StrictMode>
