@@ -1,9 +1,8 @@
-
-
-
 import { useState, useContext } from 'react';
+import { useMutation } from '@apollo/client';
+import { LOGIN_ADMIN, LOGIN_STUDENT } from '../mutations/auth'; // Import your mutations
 import '../page.css';
-import { CurrentPageContext } from '../contexts/currentPage'; 
+import { CurrentPageContext } from '../contexts/currentPage';
 import { CurrentMainContentContext } from '../contexts/currentMainContent';
 
 import Signup from "./signup";
@@ -12,57 +11,66 @@ import AdminHome from '../MainPageContent/AdminHome';
 import StudentHome from '../MainPageContent/StudentHome';
 
 function Signin() {
-  const { currentPage, setCurrentPage } = useContext(CurrentPageContext);
-  const {currentMainContent, setCurrentMainContent} = useContext(CurrentMainContentContext);
+  const { setCurrentPage } = useContext(CurrentPageContext);
+  const { setCurrentMainContent } = useContext(CurrentMainContentContext);
 
-  const handleSignin = () => {
-    const username = document.getElementById("signup-username");
-    const password = document.getElementById("signup-password");
-    const staySignedIn = document.getElementById("signup-student").checked;
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [staySignedIn, setStaySignedIn] = useState(false);
+  const [error, setError] = useState('');
 
-    let type;
-    const admins = JSON.parse(localStorage.getItem("admins")) || [];
-    const students = JSON.parse(localStorage.getItem("students")) || [];
+  const [loginAdmin] = useMutation(LOGIN_ADMIN);
+  const [loginStudent] = useMutation(LOGIN_STUDENT);
 
-    let user = admins.find(admin => admin.name === username.value && admin.password === password.value);
-    type = "admin";
+  const handleSignin = async () => {
+    try {
+      let response;
+      let userType = '';
 
-    if (!user) {
-      user = students.find(student => student.name === username.value && student.password === password.value);
-      type = "student";
-    }
+      // Try admin login
+      try {
+        response = await loginAdmin({ variables: { name: username, password } });
+        userType = 'admin';
+      } catch {
+        // If admin login fails, try student login
+          response = await loginStudent({ variables: { name: username, password } });
+          userType = 'student';
+      }
 
-    if (!user) {
-      alert("Invalid username or password");
-      return;
-    }
+      const token = response.data.loginAdmin?.token || response.data.loginStudent?.token;
+      if (!token) throw new Error("No token returned");
 
-    localStorage.setItem("active-user", JSON.stringify({ name: user.name, password: user.password, id: user.id, type }));
-    username.value = "";
-    password.value = "";
+      // Store token and type
+      localStorage.setItem('token', token);
+      localStorage.setItem('user-type', userType);
+      if (staySignedIn) {
+        localStorage.setItem('stay-signed-in', 'true');
+      }
 
-    if (staySignedIn) {
-      localStorage.setItem("stay-signed-in", "true");
-    }
-
+      // UI navigation
       setCurrentPage(<MainPage />);
-    if (type === "admin") {
-      setCurrentMainContent(<AdminHome />);
-    } else {
-      setCurrentMainContent(<StudentHome />);
+      setCurrentMainContent(userType === 'admin' ? <AdminHome /> : <StudentHome />);
+
+      setUsername('');
+      setPassword('');
+    } catch (err) {
+      setError("Invalid username or password");
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#181818]">
-      <div className="bg-gray-900 text-white p-8 rounded-2xl w-[100%] md:w-lg mx-auto h-800px ">
+      <div className="bg-gray-900 text-white p-8 rounded-2xl w-[100%] md:w-lg mx-auto">
         <h2 className="text-3xl font-bold mb-6">Sign In</h2>
+
+        {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <label htmlFor="signup-username" className="block text-lg font-semibold mb-1">Username</label>
         <input
           type="text"
           id="signup-username"
-          name="username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           className="w-full p-3 mb-4 rounded-md bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
@@ -71,7 +79,8 @@ function Signin() {
         <input
           type="password"
           id="signup-password"
-          name="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           className="w-full p-3 mb-4 rounded-md bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
@@ -80,7 +89,8 @@ function Signin() {
           <input
             type="checkbox"
             id="signup-student"
-            name="student"
+            checked={staySignedIn}
+            onChange={() => setStaySignedIn(!staySignedIn)}
             className="mr-2 accent-green-500"
           />
           <label htmlFor="signup-student" className="text-lg font-semibold">Stay Signed In?</label>
@@ -104,11 +114,7 @@ function Signin() {
         </div>
       </div>
     </div>
-    
-
-
   );
 }
-
 
 export default Signin;
