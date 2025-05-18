@@ -1,6 +1,6 @@
 import { useState, useContext } from 'react';
 import { useMutation } from '@apollo/client';
-import { LOGIN_ADMIN, LOGIN_STUDENT } from '../mutations/auth'; // Import your mutations
+import { LOGIN_ADMIN, LOGIN_STUDENT } from '../mutations/auth';
 import '../page.css';
 import { CurrentPageContext } from '../contexts/currentPage';
 import { CurrentMainContentContext } from '../contexts/currentMainContent';
@@ -27,27 +27,24 @@ function Signin() {
       let response;
       let userType = '';
 
-      // Try admin login
       try {
         response = await loginAdmin({ variables: { name: username, password } });
         userType = 'admin';
       } catch {
-        // If admin login fails, try student login
           response = await loginStudent({ variables: { name: username, password } });
           userType = 'student';
       }
 
       const token = response.data.loginAdmin?.token || response.data.loginStudent?.token;
+      const userId = response.data.loginAdmin?.id || response.data.loginStudent?.id;
+      console.log(token, userId);
       if (!token) throw new Error("No token returned");
 
-      // Store token and type
       localStorage.setItem('token', token);
-      localStorage.setItem('user-type', userType);
+      localStorage.setItem('active-user', JSON.stringify({ name: username, id: response.data.loginAdmin?.id || response.data.loginStudent?.id, type: userType }));
       if (staySignedIn) {
         localStorage.setItem('stay-signed-in', 'true');
       }
-
-      // UI navigation
       setCurrentPage(<MainPage />);
       setCurrentMainContent(userType === 'admin' ? <AdminHome /> : <StudentHome />);
 

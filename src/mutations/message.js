@@ -10,12 +10,3 @@ export const ADD_MESSAGE = gql`
   }
 `;
 
-export const GET_ALL_MESSAGES = gql`
-  query GetAllMessages {
-    getAllMessages {
-      _id
-      message
-      time
-    }
-  }
-`;

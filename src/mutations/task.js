@@ -1,4 +1,5 @@
 import { gql } from '@apollo/client';
+import e from 'express';
 
 export const ADD_TASK = gql`
   mutation AddTask(
@@ -55,15 +56,5 @@ export const UPDATE_TASK = gql`
 export const DELETE_TASK = gql`
   mutation DeleteTask($id: ID!) {
     deleteTask(id: $id)
-  }
-`;
-
-export const GET_ALL_TASKS = gql`
-  query GetAllTasks {
-    getAllTasks {
-      _id
-      title
-      status
-    }
   }
 `;
