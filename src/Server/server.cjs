@@ -5,6 +5,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { compact } = require('@apollo/client/utilities');
+const { uid } = require('chart.js/helpers');
 require('dotenv').config();
 
 // MongoDB Models
@@ -16,7 +17,8 @@ const Admin = mongoose.model('Admin', new mongoose.Schema({
 const Student = mongoose.model('Student', new mongoose.Schema({
   name: String,
   major: String,
-  password: String
+  password: String,
+  uid: String
 }));
 
 const Task = mongoose.model('Task', new mongoose.Schema({
@@ -64,8 +66,8 @@ const typeDefs = gql`
   type Student {
     _id: ID!
     name: String!
-    major: String!
     password: String!
+    uid: String!
   }
   type Project {
     _id: ID!
@@ -115,15 +117,20 @@ const typeDefs = gql`
     getAllMessagesByStudent(studentid: ID!): [Message]
     getAllMessagesByAdmin(adminid: ID!): [Message]
     getTaskByProjectAndStudent(projectid: ID!, studentid: ID!): Task
+    getStudentByName(name: String!): Student
+    getAdminByName(name: String!): Admin
+    getProjectByName(name: String!): Project
+    getTaskByName(name: String!): Task
   }
   type AuthPayload {
     token: String!
+    id: ID!
   }
   type Mutation {
     loginAdmin(name: String!, password: String!): AuthPayload
     loginStudent(name: String!, password: String!): AuthPayload
     addAdmin(name: String!, password: String!): Admin
-    addStudent(name: String!, major: String!, password: String!): Student
+    addStudent(name: String!, password: String!, uid: String!): Student
     addTask(title: String!, name: String!, description: String!, status: String!, dueDate: String!, studentid: ID!, projectid: ID!): Task
     addProject(name: String!, description: String!, category: String!, status: String!, startDate: String!, endDate: String!, studentid: ID!): Project
     addMessage(message: String!, time: String!, adminid: ID!, studentid: ID!): Message
@@ -143,26 +150,43 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
 
-    // Admin % Student Queries
-    getAdmin: async (_, { id }, context) => {
+    // Admin & Student Queries
+    getAdmin: async (_, { id }, context) => {//
       if (!context.user || (context.user.role !== 'admin' && context.user.role !== 'student')) throw new Error("Unauthorized");
       return await Admin.findById(id).select('-password');
     },
-    getAllAdmins: async (_,a,context) =>{
+    getAllAdmins: async (_,a,context) =>{//
       if (!context.user || (context.user.role !== 'admin' && context.user.role !== 'student')) throw new Error("Unauthorized");
       return await Admin.find().select('-password');
     },
-    getStudent: async (_, { id }, context) => {
+    getStudent: async (_, { id }, context) => {//
       if (!context.user || (context.user.role !== 'admin' && context.user.role !== 'student')) throw new Error("Unauthorized");
       return await Student.findById(id).select('-password');
     },
+    getStudentByName: async (_, { name }, context) => {//
+      if (!context.user || (context.user.role !== 'admin' && context.user.role !== 'student')) throw new Error("Unauthorized");
+      return await Student.findOne({ name }).select('-password');
+    },
+    getAdminByName: async (_, { name }, context) => {//
+      if (!context.user || (context.user.role !== 'admin' && context.user.role !== 'student')) throw new Error("Unauthorized");
+      return await Admin.findOne({ name }).select('-password');
+    },
+    getProject: async (_, { id }, context) => {//
+      if (!context.user || (context.user.role !== 'admin' && context.user.role !== 'student')) throw new Error("Unauthorized");
+      return await Project.findById(id);
+    },
+    getProjectByName: async (_, { name }, context) => {//
+      if (!context.user || (context.user.role !== 'admin' && context.user.role !== 'student')) throw new Error("Unauthorized");
+      return await Project.findOne({ name });
+    },
+
 
     // Admin Queries
-    getAllStudents: async (_,a,context) => {
+    getAllStudents: async (_,a,context) => {//
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       return await Student.find().select('-password');
     },
-    getTask: async (_, { id }, context) => {
+    getTask: async (_, { id }, context) => {//
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized"); 
       return await Task.findById(id);
     },
@@ -170,15 +194,11 @@ const resolvers = {
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       return await Task.find();
     },
-    getProject: async (_, { id }, context) => {
-      if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
-      return await Project.findById(id);
-    },
-    getAllProjects: async (_, a, context) => {
+    getAllProjects: async (_, a, context) => {//
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       return await Project.find();
     },
-    getMessage: async (_, { id }, context) => {
+    getMessage: async (_, { id }, context) => {//
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       return await Message.findById(id);
     },/*
@@ -187,7 +207,7 @@ const resolvers = {
       return await Message.find();
     },*/
     
-    getAllMessagesByAdmin: async (_, { adminid }, context) => {
+    getAllMessagesByAdmin: async (_, { adminid }, context) => {//
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       const admin = await Admin.findById(adminid);
       if (!admin) throw new Error("Admin not found");
@@ -199,22 +219,28 @@ const resolvers = {
     },
 
     // Student Queries
+    getTaskByName: async (_, { name }, context) => {//
+      if (!context.user || context.user.role !== 'student') throw new Error("Unauthorized");
+      return await Task.find ({ name });
+    },
 
-    getAllTasksByStudent: async (_, { studentid }, context) => {
+    getAllTasksByStudent: async (_, { studentid }, context) => {//
       if (!context.user || context.user.role !== 'student') throw new Error("Unauthorized");
       const student = await Student.findById(studentid);
+      console.log(student)
       if (!student) throw new Error("Student not found");
       const tasks = await Task.find({ studentid });
+      console.log(tasks)
       return tasks;
     },
-    getAllProjectsByStudent: async (_, { studentid }, context) => {
+    getAllProjectsByStudent: async (_, { studentid }, context) => {//
       if (!context.user || context.user.role !== 'student') throw new Error("Unauthorized");
       const student = await Student.findById(studentid);
       if (!student) throw new Error("Student not found");
       const projects = await Project.find({ studentsid: studentid });
       return projects;
     },
-    getAllMessagesByStudent: async (_, { studentid }, context) => {
+    getAllMessagesByStudent: async (_, { studentid }, context) => {//
       if (!context.user || context.user.role !== 'student') throw new Error("Unauthorized");
       const student = await Student.findById(studentid);
       if (!student) throw new Error("Student not found");
@@ -225,7 +251,7 @@ const resolvers = {
       return messages;
     },
 
-    getTaskByProjectAndStudent: async (_, { projectid, studentid }) => {
+    getTaskByProjectAndStudent: async (_, { projectid, studentid }) => {//
       const project = await Project.findById(projectid);
       if (!project) throw new Error("Project not found");
       const student = await Student.findById(studentid);
@@ -246,31 +272,32 @@ const resolvers = {
     student: async (message) => message.studentid ? await Student.findById(message.studentid) : null,
   },
   Mutation: {
-    loginAdmin: async (_, { name, password }) => {
-      console.log(password)
+    loginAdmin: async (_, { name, password }) => {//
       const admin = await Admin.findOne({ name });
       if (!admin) throw new Error("Admin not found");
       const valid = await bcrypt.compare(password, admin.password);
       if (!valid) throw new Error("Invalid password");
       const token = jwt.sign({ id: admin._id, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1d' });
-      return { token };
+      const id = admin._id;
+      return { token, id };
     },
-    loginStudent: async (_, { name, password }) => {
+    loginStudent: async (_, { name, password }) => {//
       const student = await Student.findOne({ name });
       if (!student) throw new Error("Student not found");
       const valid = await bcrypt.compare(password, student.password);
       if (!valid) throw new Error("Invalid password");
       const token = jwt.sign({ id: student._id, role: 'student' }, process.env.JWT_SECRET, { expiresIn: '1d' });
-      return { token };
+      const id = student._id;
+      return { token, id };
     },
 
-    /*addAdmin: async (_, { name, password }) => {
+    addAdmin: async (_, { name, password }) => {
       if (!name || !password) throw new Error("Name and password are required");
       const existingAdmin = await Admin.findOne({ name });
       if (existingAdmin) throw new Error("Admin already exists");
       const hashedPassword = await bcrypt.hash(password, 10);
       return await new Admin({ name, password: hashedPassword }).save();
-    },
+    },/*
     updateAdmin: async (_, { id, name, password }) => {
       const update = {};
       if (name) update.name = name;
@@ -283,16 +310,21 @@ const resolvers = {
       return `Admin ${id} deleted`;
     },*/
 
-    addStudent: async (_, { name, major, password }) => {
+    addStudent: async (_, {name, password, uid }) => {//
+      if (!name || !password || !uid) throw new Error("Name, password and UID are required");
+      const existingStudent = await Student.findOne({ name });
+      if (existingStudent) throw new Error("Student already exists")
+      const existingUid = await Student.findOne({ uid });
+      if (existingUid) throw new Error("UID already exists");
       const hashedPassword = await bcrypt.hash(password, 10);
-      return await new Student({ name, major, password: hashedPassword }).save();
+      return await new Student({ name, password: hashedPassword, uid }).save();
     },
-    updateStudent: async (_, { id, name, major, password }, context) => {
+    updateStudent: async (_, { id, name, password, uid }, context) => {//
       if (!context.user || context.user.role !== 'student') throw new Error("Unauthorized");
       const update = {};
       if (name) update.name = name;
-      if (major) update.major = major;
       if (password) update.password = await bcrypt.hash(password, 10);
+      if (uid) update.uid = uid;
       const student = await Student.findById(id);
       if (!student) throw new Error("Student not found");
       if (student.password !== password) {
@@ -301,14 +333,14 @@ const resolvers = {
       }
       return await Student.findByIdAndUpdate(id, update, { new: true });
     },
-    deleteStudent: async (_, { id }, context) => {
+    deleteStudent: async (_, { id }, context) => {//
       if (!context.user || context.user.role !== 'student') throw new Error("Unauthorized");
       const result = await Student.findByIdAndDelete(id);
       if (!result) throw new Error('Student not found');
       return `Student ${id} deleted`;
     },
 
-    addTask: async (_, { title, name, description, status, dueDate, studentid, projectid }, context) => {
+    addTask: async (_, { title, name, description, status, dueDate, studentid, projectid }, context) => {//
       if (!context.user || context.user.role !== 'student') throw new Error("Unauthorized");
       if (!title || !name || !description || !status || !dueDate || !studentid || !projectid) throw new Error("All fields are required");
       const student = await Student.findById(studentid);
@@ -319,7 +351,7 @@ const resolvers = {
       await task.save();
       return task;
     },
-    updateTask: async (_, { id, ...fields }, context) => {
+    updateTask: async (_, { id, ...fields }, context) => {//
       if (!context.user || context.user.role !== 'student') throw new Error("Unauthorized");
       if (fields.dueDate) fields.dueDate = new Date(fields.dueDate);
       if (fields.studentid) {
@@ -332,14 +364,14 @@ const resolvers = {
       }
       return await Task.findByIdAndUpdate(id, fields, { new: true });
     },
-    deleteTask: async (_, { id }, context) => {
+    deleteTask: async (_, { id }, context) => {//
       if (!context.user || context.user.role !== 'student') throw new Error("Unauthorized");
       const result = await Task.findByIdAndDelete(id);
       if (!result) throw new Error('Task not found');
       return `Task ${id} deleted`;
     },
 
-    addProject: async (_, { name, description, category, status, startDate, endDate, studentid }, context) => {
+    addProject: async (_, { name, description, category, status, startDate, endDate, studentid }, context) => {//
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       if (!name || !description || !category || !status || !startDate || !endDate || !studentid) throw new Error("All fields are required");
       const student = await Student.findById(studentid);
@@ -348,7 +380,7 @@ const resolvers = {
       await project.save(); 
       return project;
     }, 
-    updateProject: async (_, { id, studentid, ...fields }, context) => {
+    updateProject: async (_, { id, studentid, ...fields }, context) => {//
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       if (fields.startDate) fields.startDate = new Date(fields.startDate);
       if (fields.endDate) fields.endDate = new Date(fields.endDate);
@@ -359,14 +391,14 @@ const resolvers = {
       }
       return await Project.findByIdAndUpdate(id, fields, { new: true });
     },
-    deleteProject: async (_, { id }, context) => {
+    deleteProject: async (_, { id }, context) => {//
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       const result = await Project.findByIdAndDelete(id);
       if (!result) throw new Error('Project not found');
       return `Project ${id} deleted`;
     },
 
-    addMessage: async (_, { message, time, adminid, studentid }, context) => {
+    addMessage: async (_, { message, time, adminid, studentid }, context) => {//
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       if (!message || !time || !adminid || !studentid) throw new Error("All fields are required");
       const admin = await Admin.findById(adminid);
@@ -377,7 +409,7 @@ const resolvers = {
       await msg.save();
       return msg;
     },
-    updateMessage: async (_, { id, ...fields }, context) => {
+    /*updateMessage: async (_, { id, ...fields }, context) => {
       if (!context.user || context.user.role !== 'admin') throw new Error("Unauthorized");
       if (fields.time) fields.time = new Date(fields.time);
       if (fields.adminid) {
@@ -395,7 +427,7 @@ const resolvers = {
       const result = await Message.findByIdAndDelete(id);
       if (!result) throw new Error('Message not found');
       return `Message ${id} deleted`;
-    }
+    }*/
   },
 }
 
@@ -403,11 +435,13 @@ const resolvers = {
 const app = express();
 
 const corsOptions = {
-  origin: ['http://localhost:5174', 'http://127.0.0.1:5174'],
+  origin: ['http://localhost:5173'],
+  //origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
+
 
 app.use(cors(corsOptions));
 

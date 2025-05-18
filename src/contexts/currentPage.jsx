@@ -1,15 +1,20 @@
-import { createContext, useState } from "react"
+import { createContext, useState, useEffect } from "react";
 
-import Signin from "../Pages/Signin";
+import Signin from "../Pages/signin";
 import MainPage from "../Pages/MainPage";
 
 const CurrentPageContext = createContext();
 
 const CurrentPageProvider = ({ children }) => {
-    const staySignedIn = JSON.parse(localStorage.getItem("stay-signed-in"));
     const [currentPage, setCurrentPage] = useState(<Signin/>);
-    if(staySignedIn == "true")
-        setCurrentPage(<MainPage/>);
+
+    useEffect(() => {
+        const staySignedIn = JSON.parse(localStorage.getItem("stay-signed-in"));
+        if (staySignedIn === true) {
+            setCurrentPage(<MainPage />);
+        }
+    }, []);
+
     return (
         <CurrentPageContext.Provider value={{ currentPage, setCurrentPage }}>
             {children}
@@ -17,4 +22,4 @@ const CurrentPageProvider = ({ children }) => {
     );
 }
 
-export {CurrentPageContext, CurrentPageProvider};
+export { CurrentPageContext, CurrentPageProvider };

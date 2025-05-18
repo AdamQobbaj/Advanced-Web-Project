@@ -3,7 +3,7 @@ import { CurrentMainContentContext } from '../contexts/currentMainContent';
 import { CurrentPageContext } from '../contexts/currentPage';
 import { ProjectDataContext } from '../contexts/projectDataContext';
 
-import Signin from "./Signin";
+import Signin from "./signin";
 import AdminHome from "../MainPageContent/AdminHome";
 import StudentHome from "../MainPageContent/StudentHome";
 import AdminProjects from "../MainPageContent/AdminProjects";
@@ -19,15 +19,15 @@ import AddProgectTemp from '../Components/AddProjectTemp';
 function MainPage () {
   const { currentMainContent, setCurrentMainContent } = useContext(CurrentMainContentContext);
   const { currentPage, setCurrentPage } = useContext(CurrentPageContext);
-  const [activeTab, setActiveTab] = useState("home");
+  const storgaeActiveTab = localStorage.getItem("active-tab");
+  const [activeTab, setActiveTab] = useState(storgaeActiveTab);
     const {projectData, setProjectData } = useContext(ProjectDataContext);
 
 
   const activeUser = JSON.parse(localStorage.getItem("active-user"));
-  const activeUserText = activeUser.type.charAt(0).toUpperCase() + activeUser.type.slice(1);
 
   function logout() {
-    localStorage.setItem("active-user", JSON.stringify({ name: "", password: "", id: "", type: "" }));
+    localStorage.setItem("active-user", JSON.stringify({ name: "", id: "" }));
     localStorage.setItem("stay-signed-in", "false");
     setCurrentPage(<Signin />);
   }
@@ -35,21 +35,25 @@ function MainPage () {
   function loadHomeContent() {
     setActiveTab("home");
     setCurrentMainContent(activeUser.type === "admin" ? <AdminHome /> : <StudentHome />);
+    localStorage.setItem("active-tab", "home");
   }
 
   function loadProjectsContent() {
     setActiveTab("projects");
     setCurrentMainContent(activeUser.type === "admin" ? <AdminProjects /> : <StudentProjects />);
+    localStorage.setItem("active-tab", "projects");
   }
 
   function loadTasksContent() {
     setActiveTab("tasks");
     setCurrentMainContent(activeUser.type === "admin" ? <AdminTasks /> : <StudentTasks />);
+    localStorage.setItem("active-tab", "tasks");
   }
 
   function loadChatContent() {
     setActiveTab("chat");
     setCurrentMainContent(activeUser.type === "admin" ? <AdminChat /> : <StudentChat />);
+    localStorage.setItem("active-tab", "chat");
   }
 
   return (

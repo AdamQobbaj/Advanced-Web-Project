@@ -58,13 +58,3 @@ export const DELETE_PROJECT = gql`
   }
 `;
 
-export const GET_ALL_PROJECTS = gql`
-  query GetAllProjects {
-    getAllProjects {
-      _id
-      name
-      description
-      status
-    }
-  }
-`;
