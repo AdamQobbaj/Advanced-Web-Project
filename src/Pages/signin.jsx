@@ -21,6 +21,7 @@ function Signin() {
 
   const [loginAdmin] = useMutation(LOGIN_ADMIN);
   const [loginStudent] = useMutation(LOGIN_STUDENT);
+  const storgaeActiveTab = localStorage.getItem("active-tab");
 
   const handleSignin = async () => {
     try {
@@ -37,7 +38,7 @@ function Signin() {
 
       const token = response.data.loginAdmin?.token || response.data.loginStudent?.token;
       const userId = response.data.loginAdmin?.id || response.data.loginStudent?.id;
-      console.log(token, userId);
+      //console.log(token, userId);
       if (!token) throw new Error("No token returned");
 
       localStorage.setItem('token', token);
@@ -46,8 +47,9 @@ function Signin() {
         localStorage.setItem('stay-signed-in', 'true');
       }
       setCurrentPage(<MainPage />);
-      setCurrentMainContent(userType === 'admin' ? <AdminHome /> : <StudentHome />);
-
+      setCurrentMainContent(userType === 'admin' ?<AdminHome /> : <StudentHome />);
+      localStorage.setItem('active-tab',"home");
+        
       setUsername('');
       setPassword('');
     } catch (err) {

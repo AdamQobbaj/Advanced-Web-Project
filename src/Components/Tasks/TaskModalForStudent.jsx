@@ -3,6 +3,7 @@
 
 
 
+
 import React, { useState, useEffect } from "react";
 
 function TaskModal({
@@ -12,17 +13,16 @@ function TaskModal({
   projects = [],
   initialTaskData = null,
 }) {
-  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const activeUser = JSON.parse(localStorage.getItem("active-user"));
+   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [taskName, setTaskName] = useState("");
   const [description, setDescription] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
+  const [assignedTo, setAssignedTo] = useState(activeUser.id);
   const [status, setStatus] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [availableStudents, setAvailableStudents] = useState([]);
   const isEditMode = !!initialTaskData;
-  const activeUser = JSON.parse(localStorage.getItem("active-user"));
-
-
+ 
   useEffect(() => {
     if (isOpen) {
       if (isEditMode) {
@@ -36,7 +36,7 @@ function TaskModal({
         setSelectedProjectId("");
         setTaskName("");
         setDescription("");
-        setAssignedTo("");
+        setAssignedTo(activeUser.id);
         setStatus("");
         setDueDate("");
         setAvailableStudents([]);
@@ -74,11 +74,11 @@ function TaskModal({
           initialTaskData?.projectid?.toString() !== selectedProjectId)
       ) {
         // If adding new, or if project changed during edit, reset student selection
-        setAssignedTo("");
+        setAssignedTo(activeUser.id);
       }
     } else if (isOpen && !selectedProjectId) {
       setAvailableStudents([]);
-      setAssignedTo("");
+      setAssignedTo(activeUser.id);
     }
   }, [
     selectedProjectId,
@@ -95,7 +95,15 @@ function TaskModal({
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
+
     e.preventDefault();
+    console.log({
+       selectedProjectIdss:selectedProjectId,
+       taskNamess:taskName,
+       assignedToff:assignedTo,
+       statusfff:status,
+       dueDatesfrdf:dueDate,
+    })
     if (!selectedProjectId || !taskName || !assignedTo || !status || !dueDate) {
       alert(
         "Please fill in all required fields: Project, Task Name, Student, Status, Due Date."
@@ -208,23 +216,18 @@ function TaskModal({
             </label>
             <select
               id="assignedTo"
-              value={assignedTo}
+              value={activeUser.id}
               onChange={(e) => setAssignedTo(e.target.value)}
               className="w-full p-2.5 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              required
+               
               disabled={!selectedProjectId || availableStudents.length === 0}
             >
-              <option value=""  disabled>
-                {!selectedProjectId
-                  ? "Select a project first"
-                  : availableStudents.length === 0
-                  ? "No students in project"
-                  : "Select a student"}
+              <option value={activeUser.id}   disabled>
+               {activeUser.name}
               </option>
                {
-              availableStudents.map((student) => (
-                <option key={student.id} value={student.id.toString()}     >
- 
+              availableStudents.filter(s=>s.id!==activeUser.id).map((student) => (
+                <option key={student.id} value={student.id.toString()} disabled  >
                   {student.name}
                 </option>
               ))}
@@ -283,6 +286,8 @@ function TaskModal({
 }
 
 export default TaskModal;
+
+
 
 
 

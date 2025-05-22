@@ -2,6 +2,8 @@ import { useContext, useState } from "react";
 import { CurrentMainContentContext } from '../contexts/currentMainContent';
 import { CurrentPageContext } from '../contexts/currentPage';
 import { ProjectDataContext } from '../contexts/projectDataContext';
+import { UpdateProjectContext } from '../contexts/updateProjectContext ';
+
 
 import Signin from "./signin";
 import AdminHome from "../MainPageContent/AdminHome";
@@ -14,7 +16,8 @@ import AdminChat from "../MainPageContent/AdminChat";
 import StudentChat from "../MainPageContent/StudentChat";
 import ProjectDataTemp from '../Components/ProjectDataTemp';
 import AddProgectTemp from '../Components/AddProjectTemp';
- 
+ import UpdateProjectTemp from '../Components/UpdateProjectTemp';
+
 
 function MainPage () {
   const { currentMainContent, setCurrentMainContent } = useContext(CurrentMainContentContext);
@@ -22,6 +25,7 @@ function MainPage () {
   const storgaeActiveTab = localStorage.getItem("active-tab");
   const [activeTab, setActiveTab] = useState(storgaeActiveTab);
     const {projectData, setProjectData } = useContext(ProjectDataContext);
+    const {updateProjectID, setUpdateProjectID} = useContext(UpdateProjectContext);
 
 
   const activeUser = JSON.parse(localStorage.getItem("active-user"));
@@ -79,9 +83,9 @@ function MainPage () {
       <div className="flex flex-grow w-[98%] h-[90vh] relative mx-auto flex-col md:flex-row">
         {/* Navigation */}
           <div
-    className="p-5 h-[15%] md:h-full bg-[#181818] border-r-2 border-[#3a3a3a] w-full md:w-[250px]"
+    className="p-5 h-[15%] md:h-full bg-[#181818] border-r-2 border-[#3a3a3a] max-[800px]:w-full md:w-[250px]"
   >
-    <ul className="list-none p-0 flex flex-row justify-around md:flex-col md:justify-start md:gap-2">
+    <ul className="list-none p-0 flex  max-[800px]:flex-row  max-[800px]:justify-around md:flex-col md:justify-start md:gap-2">
       <li
         onClick={loadHomeContent}
         className={`py-3 px-4 rounded-md cursor-pointer text-white ${
@@ -124,8 +128,11 @@ function MainPage () {
         
         </div>
 
-       <ProjectDataTemp projectID={projectData}></ProjectDataTemp>
-       <AddProgectTemp> </AddProgectTemp> 
+    <ProjectDataTemp/> 
+  
+      {activeUser.type==="admin" ?  <AddProgectTemp/>:<></> }
+      {activeUser.type==="admin" && (parseInt(updateProjectID)>0) ?  <UpdateProjectTemp/>:<></> }
+
       </div>
 
 

@@ -7,6 +7,8 @@ import { CurrentMainContentProvider } from './contexts/currentMainContent';
 import { ProjectDataProvider } from './contexts/projectDataContext';
 import { AddProjectProvider } from './contexts/addProjectContext';
 import { ProjectsProvider } from './contexts/projectsContext';
+import { TasksProvider } from './contexts/tasksContext';
+import { UpdateProjectProvider  } from './contexts/updateProjectContext ';
 
 
 
@@ -151,15 +153,24 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
       <CurrentPageProvider>
           <CurrentMainContentProvider>
+             <TasksProvider>
             <ProjectsProvider>
               <ProjectDataProvider>
                 <AddProjectProvider>
-                  <App />
+                 <UpdateProjectProvider>
+                     <App />
+
+                 </UpdateProjectProvider>
+
+           
+
+ 
                 </AddProjectProvider>
                </ProjectDataProvider>
             </ProjectsProvider>
- 
+            </TasksProvider>
           </CurrentMainContentProvider>
+          
       </CurrentPageProvider>
   </StrictMode>
 );

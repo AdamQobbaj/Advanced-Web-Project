@@ -61,11 +61,11 @@ function StudentHome() {
     return <p>Error fetching task data: {errorTasks.message}</p>;
   }
 
-  const allProjects = projectData?.getAllProjects || [];
-  const allTasks = taskData?.getAllTasks || [];
+  const allProjects = projectData?.getAllProjectsByStudent || [];
+  const allTasks = taskData?.getAllTasksByStudent || [];
 
-  const studentProjects = allProjects.filter(project => project.students.includes(studentId));
-  const studentTasks = allTasks.filter(task => task.students.includes(studentId));
+  const studentProjects = allProjects ;
+  const studentTasks = allTasks ;
 
   const numProjects = studentProjects.length;
   const numTasks = studentTasks.length;
