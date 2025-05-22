@@ -42,7 +42,7 @@ function Signup() {
       const variables = isStudent
         ? { name: username, password, uid }
         : { name: username, password };
-        console.log(variables);
+        //console.log(variables);
 
       const response = isStudent
         ? await signUpStudent({ variables })

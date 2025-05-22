@@ -1,17 +1,51 @@
 
 
 
+import { useApolloClient, useMutation, useQuery, gql } from "@apollo/client";
+import React, {  useState, useEffect } from "react";
+  import {GET_ALL_TASKS} from '../../MainPageContent/AdminTasks'
+import {GET_ALL_TASKS_BY_PROJECT} from"../ProjectDataTemp";
 
 
-import React, { useState, useEffect } from "react";
+ const GET_TASK = gql`
+  query GetTask($id: ID!) {
+    getTask(id: $id) {
+      _id
+      title
+      name
+      description
+      status
+      dueDate
+      studentid
+      projectid
+      student{
+        _id
+        name
+      }
+      project{
+      _id
+      name
+      }
 
-function TaskModal({
-  isOpen,
+
+    }
+  }
+`;
+
+export const DELETE_TASK = gql`
+  mutation DeleteTask($id: ID!) {
+    deleteTask(id: $id)
+  }
+`;
+
+function TaskModalUpdateAdmin({
+  taskID,
   onClose,
   onSubmit,
   projects = [],
   initialTaskData = null,
 }) {
+  const client = useApolloClient();
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [taskName, setTaskName] = useState("");
   const [description, setDescription] = useState("");
@@ -21,10 +55,58 @@ function TaskModal({
   const [availableStudents, setAvailableStudents] = useState([]);
   const isEditMode = !!initialTaskData;
   const activeUser = JSON.parse(localStorage.getItem("active-user"));
+  const [taskToUpdate, setTaskToUpdate]=useState({})
+
+const [deleteTask, { loading:loading3, error:error3 }] = useMutation(DELETE_TASK,);
+
+ 
+  const { loading, error, data , refetch}=useQuery(GET_TASK ,{
+   variables:{id:taskID.toString() },
+   skip: !taskID || parseInt(taskID) < 0,
+  });
+  if(error){
+     console.log(taskID);
+    console.error(error);
+  }
 
 
   useEffect(() => {
-    if (isOpen) {
+    if(data && data.getTask){
+      const task=data.getTask;
+      const DueDate=new Date(Number(task.dueDate));
+      console.log(DueDate);
+      const tastTemp={
+        id:task._id,
+        title:task.title,
+        description:task.description,
+        status:task.status,
+        dueDate:DueDate.toISOString().split('T')[0],
+        student:{
+          id:task.student._id,
+          name:task.student.name,
+        },
+        project:{
+          id:task.project._id,
+          name:task.project.name,
+        },
+
+       }
+
+       setTaskToUpdate(tastTemp);
+       setSelectedProjectId(tastTemp.project.id);
+       setTaskName(tastTemp.title);
+       setDueDate(tastTemp.dueDate);
+       setAssignedTo(tastTemp.student.id.toString()),
+       setStatus(tastTemp.status);
+       setDescription(tastTemp.description);
+     }
+  }, [data]);
+
+
+
+
+  useEffect(() => {
+    if (parseInt(taskID)>0) {
       if (isEditMode) {
         setSelectedProjectId(initialTaskData.projectid?.toString() || "");
         setTaskName(initialTaskData.title || "");
@@ -42,7 +124,7 @@ function TaskModal({
         setAvailableStudents([]);
       }
     }
-  }, [isOpen, isEditMode, initialTaskData]);
+  }, [taskID, isEditMode, initialTaskData]);
 
 
 
@@ -51,11 +133,13 @@ function TaskModal({
 
 
   useEffect(() => {
-    if (isOpen && selectedProjectId) {
+ 
+    if (parseInt(taskID) >0 && selectedProjectId) {
 
       const project = projects.find(
         (p) => p.id === selectedProjectId
       );
+   
 
 
        const studentsForProject =  project?.students ||[];
@@ -74,16 +158,14 @@ function TaskModal({
           initialTaskData?.projectid?.toString() !== selectedProjectId)
       ) {
         // If adding new, or if project changed during edit, reset student selection
-        setAssignedTo("");
-      }
-    } else if (isOpen && !selectedProjectId) {
+       }
+    } else if (parseInt(taskID)>0 && !selectedProjectId) {
       setAvailableStudents([]);
-      setAssignedTo("");
-    }
+     }
   }, [
     selectedProjectId,
     projects,
-     isOpen,
+     taskID,
     isEditMode,
     initialTaskData,
   ]);
@@ -92,7 +174,7 @@ function TaskModal({
 
 
 
-  if (!isOpen) return null;
+  if (parseInt(taskID)<0) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -103,6 +185,7 @@ function TaskModal({
       return;
     }
     onSubmit({
+      taskID,
       selectedProject: selectedProjectId,
       taskName,
       description,
@@ -117,6 +200,46 @@ function TaskModal({
       onClose();
     }
   };
+
+
+
+
+
+
+const deleteTheTask= async (taskid)=>{
+
+  if(activeUser.type==="admin"){
+    if(!window.confirm("are you sure you want to delete this project task")) return;
+    else{
+      try {
+        const { data:data3 } = await deleteTask({
+          variables: { id: taskid },
+
+          refetchQueries: [
+       { query: GET_ALL_TASKS },
+       { query: GET_ALL_TASKS_BY_PROJECT, variables: { projectid:  selectedProjectId } },
+            ],
+        },
+  
+      );
+        setTaskToUpdate(-1);
+        await client.reFetchObservableQueries();
+
+      } catch (err) {
+        console.error("Failed to delete project:", err.message);
+        alert("Error deleting project");
+      }      
+      
+    }
+
+  
+  }
+  else{
+    alert("you are not authorized to delete the project");
+    return;
+  }
+
+}
 
   return (
     <div
@@ -137,7 +260,6 @@ function TaskModal({
             onClick={onClose}
             className="text-gray-400 hover:text-white text-3xl leading-none"
           >
-            ×
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -270,19 +392,31 @@ function TaskModal({
               required
             />
           </div>
+
+
+          <div className="w-[70%] mx-auto flex justify-between">
+
           <button
             type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 p-2.5 rounded font-semibold mt-2 transition duration-200"
+            className="w-[45%] bg-green-600 hover:bg-green-700 p-2.5 rounded-[7px] font-semibold mt-2 transition duration-200"
           >
-            {isEditMode ? "Update Task" : "Add Task"}
+              Update Task
           </button>
+
+
+            <button
+             className="w-[45%] bg-red-500 hover:bg-[#905252] p-2.5 rounded-[7px] font-semibold mt-2 transition duration-200"
+         onClick={() => deleteTheTask(taskID)}         >  Delete Task </button>
+
+          </div>
+ 
         </form>
       </div>
     </div>
   );
 }
 
-export default TaskModal;
+export default TaskModalUpdateAdmin;
 
 
 

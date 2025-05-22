@@ -1,38 +1,184 @@
 import React, {useContext , useState, useEffect } from "react";
 import TaskTable from "../Components/Tasks/TaskTable";
 import TaskModal from "../Components/Tasks/TaskModal";
-  import { ProjectsContext } from '../contexts/projectsContext';
+import { ProjectsContext } from '../contexts/projectsContext';
+import { TasksContext } from '../contexts/tasksContext';
+import { useApolloClient ,useMutation, useQuery, gql } from "@apollo/client";
+import {GET_ALL_TASKS_BY_PROJECT} from"../Components/ProjectDataTemp";
+import TaskModalUpdateAdmin from "../Components/Tasks/TaskModalUpdateAdmin";
+
+
+  export const GET_ALL_TASKS = gql`
+  query GetAllTasks {
+    getAllTasks {
+      _id
+      title
+      name
+      description
+      status
+      dueDate
+      studentid
+      student{
+      _id
+      name
+      }
+      projectid
+      project{
+      _id
+      name
+      }
+    }
+  }
+`;
+
+ const GET_ALL_PROJECTS = gql`
+  query GetAllProjects {
+    getAllProjects {
+      _id
+      name
+      description
+      status
+      studentsid
+      startDate
+      endDate
+      category
+      students {
+        name
+        _id
+      }
+    }
+  }
+`;
+
+ const ADD_TASK = gql`
+  mutation AddTask(
+    $title: String!,
+    $name: String!,
+    $description: String!,
+    $status: String!,
+    $dueDate: String!,
+    $studentid: ID!,
+    $projectid: ID!
+  ) {
+    addTask(
+      title: $title,
+      name: $name,
+      description: $description,
+      status: $status,
+      dueDate: $dueDate,
+      studentid: $studentid,
+      projectid: $projectid
+    ) {
+      _id
+      title
+    }
+  }
+`;
+
+const UPDATE_TASK = gql`
+  mutation UpdateTask(
+    $id: ID!,
+    $title: String,
+    $name: String,
+    $description: String,
+    $status: String,
+    $dueDate: String,
+    $studentid: ID,
+    $projectid: ID
+  ) {
+    updateTask(
+      id: $id,
+      title: $title,
+      name: $name,
+      description: $description,
+      status: $status,
+      dueDate: $dueDate,
+      studentid: $studentid,
+      projectid: $projectid
+    ) {
+      _id
+       
+    }
+  }
+`;
+
+
 
 function AdminTasks() {
   // --- State Management ---
-  const [tasks, setTasks] = useState(
-    () => JSON.parse(localStorage.getItem("tasks")) || []
-  );
+   const client = useApolloClient();
  
 
 
-  const [students, setStudents] = useState(
-    () => JSON.parse(localStorage.getItem("students")) || []
-  );
+  
 
   const {projects, setProjects} = useContext(ProjectsContext); 
+  const {tasks, setTasks} = useContext(TasksContext); 
 
+
+    const { loading, error, data , refetch} = useQuery(GET_ALL_TASKS);
+    //if(error)console.log(error);
+    useEffect(() => {
+      if (data && data.getAllTasks) {
+        const tasksTemp = data.getAllTasks.map((task) => {
+          const dueDate = new Date(Number(task.dueDate));
+ 
+          return {
+            id: task._id,
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            student: task.student,
+            dueDate: dueDate.toLocaleDateString(),
+            project:task.project,
+           };
+        });
+        setTasks(tasksTemp);
+       }
+    }, [data]);
+
+    const { loading: lodafing2, data:data2, error:error2, refetch:refetch2 } = useQuery(GET_ALL_PROJECTS);
+    //if(error2)console.log(error2);
+    useEffect(() => {
+      if (data2 && data2.getAllProjects) {
+        const projectsTemp = data2.getAllProjects.map((pro) => {
+          const StartDate = new Date(Number(pro.startDate));
+          const EndDate = new Date(Number(pro.endDate));
+
+          return {
+            id: pro._id,
+            name: pro.name,
+            description: pro.description,
+            status: pro.status,
+            students: pro.students.map((s) => {
+           return {              
+              name:s.name,
+              id: s._id,
+            }
+              
+            
+            }),
+            category: pro.category,
+            startDate: StartDate.toLocaleDateString(),
+            endDate: EndDate.toLocaleDateString(),
+          };
+        });
+        setProjects(projectsTemp);
+       }
+    }, [data2]);
+
+ 
 
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState("id"); // Default sort by ID
+  const [taskID, setTaskID] = useState(-1);
 
-  // --- LocalStorage Synchronization ---
-  useEffect(() => {
-    // Save tasks whenever the tasks state changes
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+  
+  
 
-  useEffect(() => {
-    // Save projects whenever the projects state changes
-    // Needed because adding a task modifies the project's tasks array
-    localStorage.setItem("projects", JSON.stringify(projects));
-  }, [projects]);
+
+ 
 
   // --- Event Handlers ---
   const handleOpenModal = () => {
@@ -43,44 +189,83 @@ function AdminTasks() {
     setIsModalOpen(false);
   };
 
-  const handleAddTask = (newTaskData) => {
-    // Find the highest existing ID or start from 100
-    const highestId = tasks.reduce(
-      (max, task) => Math.max(max, task.id || 0),
-      100
-    );
-    const newTaskId = highestId + 1;
 
-    // Create the new task object
-    const taskToAdd = {
-      id: newTaskId,
-      title: newTaskData.taskName,
-      // Assuming 'name' field existed in original data, duplicating title for now
-      name: newTaskData.taskName,
-      description: newTaskData.description,
-      students: [parseInt(newTaskData.assignedTo)], // Ensure student ID is an integer
-      status: newTaskData.status,
-      projectid: parseInt(newTaskData.selectedProject), // Ensure project ID is an integer
-      dueDate: newTaskData.dueDate,
-    };
-
-    // Update tasks state
-    const updatedTasks = [...tasks, taskToAdd];
-    setTasks(updatedTasks);
-
-    // Update the corresponding project's tasks array
-    const updatedProjects = projects.map((p) => {
-      if (p.id === taskToAdd.projectid) {
-        // Ensure the project has a tasks array before pushing
-        const projectTasks = Array.isArray(p.tasks) ? p.tasks : [];
-        return { ...p, tasks: [...projectTasks, newTaskId] };
-      }
-      return p;
-    });
-    setProjects(updatedProjects); // Update projects state
-
-    handleCloseModal(); // Close the modal after adding
+    const handleOpenModalUpdate = (id) => {
+    setTaskID(id);
   };
+
+  const handleCloseModalUpdate = () => {
+    setTaskID(-1);
+  };
+   
+   const [newTaskProjectID,setNewTaskProjectID]=useState(-1);
+  const [addTask, { loading: adding, error: addError }] = useMutation(ADD_TASK);
+
+  const [updateTask, { loading: updating, error: updaterror }] = useMutation(UPDATE_TASK);
+
+
+  const handleAddTask = async (newTaskData) => {
+    //console.log(newTaskData);
+    setNewTaskProjectID(newTaskData.selectedProject);
+
+  try {
+    const { data:data3 } = await addTask({
+      variables: {
+        title: newTaskData.taskName,
+        name: newTaskData.taskName,              // you used it twice before
+        description: newTaskData.description,
+        status: newTaskData.status,
+        dueDate:new Date(newTaskData.dueDate).toISOString(),            // keep as ISO string
+        studentid: newTaskData.assignedTo,       // already an ID
+        projectid: newTaskData.selectedProject,  // already an ID
+      },
+
+      refetchQueries: [
+    { query: GET_ALL_TASKS },
+    { query: GET_ALL_TASKS_BY_PROJECT, variables: { projectid: newTaskData.selectedProject } },
+  ],
+    });
+ 
+    handleCloseModal();
+    await client.reFetchObservableQueries();
+  } catch (err) {
+    //console.error('Failed to add task:', err);
+    alert('Could not add task, please try again.');
+  }
+};
+
+
+  const handleUpdateTask = async (newTaskData) => {
+    //console.log(newTaskData);
+    setNewTaskProjectID(newTaskData.selectedProject);
+
+  try {
+     const { data:data4 } = await updateTask({
+      variables: {
+        id:newTaskData.taskID,
+        title: newTaskData.taskName,
+        name: newTaskData.taskName,              // you used it twice before
+        description: newTaskData.description,
+        status: newTaskData.status,
+        dueDate:new Date(newTaskData.dueDate).toISOString(),            // keep as ISO string
+        studentid: newTaskData.assignedTo,       // already an ID
+        projectid: newTaskData.selectedProject,  // already an ID
+      },
+
+      refetchQueries: [
+    { query: GET_ALL_TASKS },
+    { query: GET_ALL_TASKS_BY_PROJECT, variables: { projectid: newTaskData.selectedProject } },
+  ],
+    });
+ 
+    handleCloseModalUpdate();
+    await client.reFetchObservableQueries();
+  } catch (err) {
+    //console.error('Failed to add task:', err);
+    //alert('Could not add task, please try again.');
+  }
+};
+
 
   const handleSortChange = (event) => {
     setSortBy(event.target.value);
@@ -89,15 +274,14 @@ function AdminTasks() {
   // --- Sorting Logic ---
   const getSortedTasks = () => {
     let sorted = [...tasks]; // Create a copy to avoid mutating original state
-
     sorted.sort((a, b) => {
       switch (sortBy) {
         case "status":
           return (a.status || "").localeCompare(b.status || "");
         case "project":
           // Find project names for comparison
-          const projectA = projects.find((p) => p.id === parseInt(a.projectid));
-          const projectB = projects.find((p) => p.id === parseInt(b.projectid));
+          const projectA =  a.project;
+          const projectB =b.project;
           return (projectA?.name || "").localeCompare(projectB?.name || "");
         case "dueDate":
           // Compare dates
@@ -106,12 +290,9 @@ function AdminTasks() {
           return dateA - dateB;
         case "assignedStudent":
           // Find student names for comparison (assuming one student per task as per current logic)
-          const studentA = students.find(
-            (s) => Array.isArray(a.students) && a.students.includes(s.id)
-          );
-          const studentB = students.find(
-            (s) => Array.isArray(b.students) && b.students.includes(s.id)
-          );
+          const studentA = a.student;
+       
+          const studentB =  b.student;
           return (studentA?.name || "").localeCompare(studentB?.name || "");
         case "title":
           return (a.title || "").localeCompare(b.title || "");
@@ -126,7 +307,7 @@ function AdminTasks() {
 
   // --- Render ---
   const displayedTasks = getSortedTasks();
-
+ 
   return (
     // Using Tailwind classes for styling - adapt as needed
     <div className="p-4 md:p-6   min-h-screen text-white">
@@ -164,20 +345,33 @@ function AdminTasks() {
       {/* Task Table */}
       <TaskTable
         tasks={displayedTasks}
-        projects={projects}
-        students={students}
+        onClick={handleOpenModalUpdate}
+  
       />
 
       {/* Task Modal (conditionally rendered) */}
-      <TaskModal
+       <TaskModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleAddTask}
         projects={projects}
-        students={students}
-        // initialTaskData={null} // Pass task data here for editing later
+         // initialTaskData={null} // Pass task data here for editing later
         // isEditMode={false}
       />
+
+        <TaskModalUpdateAdmin
+        taskID={taskID}
+        onClose={handleCloseModalUpdate}
+        onSubmit={handleUpdateTask}
+        projects={projects}
+         // initialTaskData={null} // Pass task data here for editing later
+        // isEditMode={false}
+      />
+
+
+
+
+
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { handleError } from "@apollo/client/link/http/parseAndCheckHttpResponse";
 import React from "react";
 
 function getStatusColorClass(status) {
@@ -17,10 +18,14 @@ function getStatusColorClass(status) {
   }
 }
 
-function TaskRow({ task, projectName, studentName }) {
+function TaskRow({ task, projectName, studentName , num, onClick}) {
+  const handleClick=(e)=>{
+    e.preventDefault();
+  onClick(task.id);
+  }
   return (
-    <tr className="border-b border-gray-700 hover:bg-gray-700">
-      <td className="px-4 py-3 text-sm">{task.id || "N/A"}</td>
+    <tr className="border-b border-gray-700 hover:bg-gray-700" onClick={handleClick}>
+      <td className="px-4 py-3 text-sm">{num }</td>
       <td className="px-4 py-3 text-sm">{projectName || "Unlinked"}</td>
       <td className="px-4 py-3 text-sm">{task.title || ""}</td>
       <td

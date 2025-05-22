@@ -1,10 +1,8 @@
 import React from "react";
 import TaskRow from "./TaskRow";
 
-function TaskTable({ tasks, projects, students }) {
-  if (!tasks || !projects || !students) {
-    return <div className="text-center py-4">Loading data...</div>;
-  }
+function TaskTable({ tasks, onClick }) {
+ 
 
   return (
     <div className="table-container mt-6 shadow-lg rounded-lg overflow-x-auto bg-gray-800">
@@ -29,21 +27,19 @@ function TaskTable({ tasks, projects, students }) {
             </tr>
           ) : (
             tasks.map((task) => {
-              const project = projects.find(
-                (p) => p.id === parseInt(task.projectid)
-              );
-              const projectName = project ? project.name : "Unlinked";
+            
+              const projectName = task.project ? task.project.name : "Unlinked";
 
-              const student = students.find(
-                (s) =>
-                  Array.isArray(task.students) && task.students.includes(s.id)
-              );
-              const studentName = student ? student.name : "Unknown/None";
+ 
+              const studentName = task.student ? task.student.name : "Unknown/None";
 
               return (
                 <TaskRow
                   key={task.id}
                   task={task}
+                  num={tasks.indexOf(task)}
+                  onClick={onClick}
+
                   projectName={projectName}
                   studentName={studentName}
                 />

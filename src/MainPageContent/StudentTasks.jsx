@@ -1,105 +1,237 @@
-import React, { useState, useEffect } from "react";
+import React, {useContext , useState, useEffect } from "react";
 import TaskTable from "../Components/Tasks/TaskTable";
-// Potentially import TaskModal if students can add/edit tasks
-// import TaskModal from '../../Components/Tasks/TaskModal';
+import TaskModal from "../Components/Tasks/TaskModalForStudent";
+import { ProjectsContext } from '../contexts/projectsContext';
+import { TasksContext } from '../contexts/tasksContext';
+import { useMutation, useQuery, gql } from "@apollo/client";
+import {GET_ALL_TASKS_BY_PROJECT} from"../Components/ProjectDataTemp";
 
-function StudentTasks() {
+  const GET_ALL_TASKS_BY_STUDENT = gql`
+  query GetAllTasksByStudent($studentid: ID!) {
+    getAllTasksByStudent(studentid: $studentid) {
+      _id
+      title
+      name
+      description
+      status
+      dueDate
+      studentid
+      
+      projectid
+      student{
+      _id
+      name
+      }
+      projectid
+      project{
+      _id
+      name
+      }
+    }
+  }
+`;
+
+
+ const GET_ALL_PROJECTS_BY_STUDENT = gql`
+  query GetAllProjectsByStudent($studentid: ID!) {
+    getAllProjectsByStudent(studentid: $studentid) {
+      _id
+      name
+      description
+      status
+      startDate
+      endDate
+      students {
+        name
+        _id
+      }
+      studentsid
+    }
+  }
+`;
+
+ const ADD_TASK = gql`
+  mutation AddTask(
+    $title: String!,
+    $name: String!,
+    $description: String!,
+    $status: String!,
+    $dueDate: String!,
+    $studentid: ID!,
+    $projectid: ID!
+  ) {
+    addTask(
+      title: $title,
+      name: $name,
+      description: $description,
+      status: $status,
+      dueDate: $dueDate,
+      studentid: $studentid,
+      projectid: $projectid
+    ) {
+      _id
+      title
+    }
+  }
+`;
+
+
+
+function AdminTasks() {
   // --- State Management ---
-  const [allTasks, setAllTasks] = useState(
-    () => JSON.parse(localStorage.getItem("tasks")) || []
-  );
-  const [allProjects, setAllProjects] = useState(
-    () => JSON.parse(localStorage.getItem("projects")) || []
-  );
-  const [allStudents, setAllStudents] = useState(
-    () => JSON.parse(localStorage.getItem("students")) || []
-  );
-  const [activeUser, setActiveUser] = useState(
-    () => JSON.parse(localStorage.getItem("active-user")) || null
-  );
-  // const [isModalOpen, setIsModalOpen] = useState(false); // Uncomment if students can add/edit
+  
+ 
+
+
+  
+
+  const {projects, setProjects} = useContext(ProjectsContext); 
+  const {tasks, setTasks} = useContext(TasksContext); 
+  let activeUser = JSON.parse(localStorage.getItem("active-user"));
+
+    const { loading, error, data , refetch} = useQuery(GET_ALL_TASKS_BY_STUDENT, {
+  variables: { studentid: activeUser.id },
+});
+    //if(error)console.log(error)
+    useEffect(() => {
+      if (data && data.getAllTasksByStudent) {
+        const tasksTemp = data.getAllTasksByStudent.map((task) => {
+          const dueDate = new Date(Number(task.dueDate));
+ 
+          return {
+            id: task._id,
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            student: task.student,
+            dueDate: dueDate.toLocaleDateString(),
+            project:task.project,
+           };
+        });
+        setTasks(tasksTemp);
+       }
+    }, [data]);
+
+    const { loading: lodafing2, data:data2, error:error2, refetch:refetch2 } = useQuery(GET_ALL_PROJECTS_BY_STUDENT,{
+        variables: { studentid: activeUser.id },
+    });
+    //if(error2)console.log(error2);
+    useEffect(() => {
+      if (data2 && data2.getAllProjectsByStudent) {
+        const projectsTemp = data2.getAllProjectsByStudent.map((pro) => {
+          const StartDate = new Date(Number(pro.startDate));
+          const EndDate = new Date(Number(pro.endDate));
+
+          return {
+            id: pro._id,
+            name: pro.name,
+            description: pro.description,
+            status: pro.status,
+            students: pro.students.map((s) => {
+           return {              
+              name:s.name,
+              id: s._id,
+            }
+              
+            
+            }),
+            category: pro.category,
+            startDate: StartDate.toLocaleDateString(),
+            endDate: EndDate.toLocaleDateString(),
+          };
+        });
+        setProjects(projectsTemp);
+       }
+    }, [data2]);
+
+ 
+
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState("id"); // Default sort by ID
 
-  // --- LocalStorage Synchronization (Only if students can modify data) ---
-  /* Uncomment if needed
-    useEffect(() => {
-        localStorage.setItem('tasks', JSON.stringify(allTasks));
-    }, [allTasks]);
+  
+  
 
-    useEffect(() => {
-        localStorage.setItem('projects', JSON.stringify(allProjects));
-    }, [allProjects]);
-    */
+
+ 
 
   // --- Event Handlers ---
-  // Uncomment and adapt if students have modal functionality
-  /*
-    const handleOpenModal = () => {
-        setIsModalOpen(true);
-    };
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-    };
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
 
-    const handleAddTask = (newTaskData) => {
-        // Similar logic to AdminTasks, but potentially restricted
-        // e.g., assignedTo might default to activeUser.id
-        // project selection might be limited to student's projects
-        console.log("Add Task (Student): ", newTaskData);
-        handleCloseModal();
-    };
-    */
+  
+  
+  const [addTask, { loading: adding, error: addError }] =
+    useMutation(ADD_TASK, {
+      refetchQueries: ['GetAllTasksByStudent','GetAllTasksByProject'],
+    });
+
+  const handleAddTask = async (newTaskData) => {
+    //console.log(newTaskData);
+
+  try {
+    const { data:data3 } = await addTask({
+      variables: {
+        title: newTaskData.taskName,
+        name: newTaskData.taskName,              // you used it twice before
+        description: newTaskData.description,
+        status: newTaskData.status,
+        dueDate:new Date(newTaskData.dueDate).toISOString(),            // keep as ISO string
+        studentid: newTaskData.assignedTo,       // already an ID
+        projectid: newTaskData.selectedProject,  // already an ID
+      },
+      
+            refetchQueries: [
+          { query: GET_ALL_TASKS_BY_STUDENT },
+          { query: GET_ALL_TASKS_BY_PROJECT, variables: { projectid: newTaskData.selectedProject } },
+        ],
+    });
+ 
+    handleCloseModal();
+  } catch (err) {
+    //console.error('Failed to add task:', err);
+    alert('Could not add task, please try again.');
+  }
+};
 
   const handleSortChange = (event) => {
     setSortBy(event.target.value);
   };
 
-  // --- Filtering and Sorting Logic ---
-  const getFilteredAndSortedTasks = () => {
-    if (!activeUser) return [];
-
-    // 1. Filter tasks for the active student
-    const studentTasks = allTasks.filter(
-      (task) =>
-        Array.isArray(task.students) && task.students.includes(activeUser.id)
-    );
-
-    // 2. Sort the filtered tasks
-    let sorted = [...studentTasks]; // Create a copy
-
+  // --- Sorting Logic ---
+  const getSortedTasks = () => {
+    let sorted = [...tasks]; // Create a copy to avoid mutating original state
     sorted.sort((a, b) => {
       switch (sortBy) {
         case "status":
           return (a.status || "").localeCompare(b.status || "");
         case "project":
-          const projectA = allProjects.find(
-            (p) => p.id === parseInt(a.projectid)
-          );
-          const projectB = allProjects.find(
-            (p) => p.id === parseInt(b.projectid)
-          );
+          // Find project names for comparison
+          const projectA =  a.project;
+          const projectB =b.project;
           return (projectA?.name || "").localeCompare(projectB?.name || "");
         case "dueDate":
+          // Compare dates
           const dateA = new Date(a.dueDate || 0);
           const dateB = new Date(b.dueDate || 0);
           return dateA - dateB;
-        // "assignedStudent" sort might be less relevant here as all tasks belong to the student
-        // but keeping it for consistency if needed
         case "assignedStudent":
-          const studentNameA =
-            allStudents.find(
-              (s) => Array.isArray(a.students) && a.students.includes(s.id)
-            )?.name || "";
-          const studentNameB =
-            allStudents.find(
-              (s) => Array.isArray(b.students) && b.students.includes(s.id)
-            )?.name || "";
-          return studentNameA.localeCompare(studentNameB);
+          // Find student names for comparison (assuming one student per task as per current logic)
+          const studentA = a.student;
+       
+          const studentB =  b.student;
+          return (studentA?.name || "").localeCompare(studentB?.name || "");
         case "title":
           return (a.title || "").localeCompare(b.title || "");
         case "id":
         default:
+          // Compare IDs
           return (a.id || 0) - (b.id || 0);
       }
     });
@@ -107,24 +239,19 @@ function StudentTasks() {
   };
 
   // --- Render ---
-  const displayedTasks = getFilteredAndSortedTasks();
-
-  // Handle case where user data isn't loaded yet
-  if (!activeUser) {
-    return <div className="p-6 text-white">Loading user data...</div>; // Or redirect to login
-  }
-
+  const displayedTasks = getSortedTasks();
+ 
   return (
-    // Using Tailwind classes for styling
-    <div className="p-4 md:p-6 bg-gray-900 min-h-screen text-white">
-      {/* Header: Sort Dropdown (Add Task Button might be removed for students) */}
+    // Using Tailwind classes for styling - adapt as needed
+    <div className="p-4 md:p-6   min-h-screen text-white">
+      {/* Header: Sort Dropdown and Add Task Button */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div className="sort-container flex items-center">
           <label
             htmlFor="sortBy"
             className="mr-2 text-sm font-medium text-gray-300"
           >
-            Sort Your Tasks By:
+            Sort By:
           </label>
           <select
             id="sortBy"
@@ -137,41 +264,34 @@ function StudentTasks() {
             <option value="status">Status</option>
             <option value="project">Project</option>
             <option value="dueDate">Due Date</option>
-            {/* <option value="assignedStudent">Assigned Student</option> */}
+            <option value="assignedStudent">Assigned Student</option>
           </select>
         </div>
-        {/* Optional: Add Task button for students if allowed */}
-        {/*
-                <button
-                    onClick={handleOpenModal}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200 w-full md:w-auto"
-                >
-                    Add New Task (if applicable)
-                </button>
-                */}
+        <button
+          onClick={handleOpenModal}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200 w-full md:w-auto"
+        >
+          Create New Task
+        </button>
       </div>
 
       {/* Task Table */}
       <TaskTable
         tasks={displayedTasks}
-        projects={allProjects}
-        students={allStudents}
+  
       />
 
-      {/* Task Modal (conditionally rendered if students can add/edit) */}
-      {/*
-            <TaskModal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                onSubmit={handleAddTask}
-                projects={allProjects.filter(p => p.students?.includes(activeUser.id))} // Maybe only show student's projects
-                students={allStudents} // Modal might restrict selection to self
-                // initialTaskData={null}
-                // isEditMode={false}
-            />
-            */}
+      {/* Task Modal (conditionally rendered) */}
+       <TaskModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleAddTask}
+        projects={projects}
+         // initialTaskData={null} // Pass task data here for editing later
+        // isEditMode={false}
+      />
     </div>
   );
 }
 
-export default StudentTasks;
+export default AdminTasks;
